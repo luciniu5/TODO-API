@@ -1,12 +1,4 @@
-
-"""
-Example script showing how to represent todo lists and todo entries in Python
-data structures and how to implement endpoint for a REST API with Flask.
-
-Requirements:
-* flask
-"""
-
+from crypt import methods
 import uuid 
 
 from flask import Flask, request, jsonify, abort
@@ -19,9 +11,11 @@ app = Flask(__name__)
 user_id_bob = uuid.uuid4()
 user_id_alice = uuid.uuid4()
 user_id_eve = uuid.uuid4()
+
 todo_list_1_id = '1318d3d1-d979-47e1-a225-dab1751dbe75'
 todo_list_2_id = '3062dc25-6b80-4315-bb1d-a7c86b014c65'
 todo_list_3_id = '44b02e00-03bc-451d-8d01-0c67ea866fee'
+
 todo_1_id = uuid.uuid4()
 todo_2_id = uuid.uuid4()
 todo_3_id = uuid.uuid4()
@@ -39,10 +33,10 @@ todo_lists = [
     {'id': todo_list_3_id, 'name': 'Privat'},
 ]
 todos = [
-    {'id': todo_1_id, 'name': 'Milch', 'description': '', 'list': todo_list_1_id, 'user': user_id_bob},
-    {'id': todo_2_id, 'name': 'Arbeitsblätter ausdrucken', 'description': '', 'list': todo_list_2_id, 'user': user_id_alice},
-    {'id': todo_3_id, 'name': 'Kinokarten kaufen', 'description': '', 'list': todo_list_3_id, 'user': user_id_eve},
-    {'id': todo_3_id, 'name': 'Eier', 'description': '', 'list': todo_list_1_id, 'user': user_id_eve},
+    {'id': todo_1_id, 'subject': 'Milch','list': todo_list_1_id, 'owner_id': user_id_bob},
+    {'id': todo_2_id, 'subject': 'Arbeitsblätter ausdrucken','list': todo_list_2_id, 'owner_id': user_id_alice},
+    {'id': todo_3_id, 'subject': 'Kinokarten kaufen','list': todo_list_3_id, 'owner_id': user_id_eve},
+    {'id': todo_3_id, 'subject': 'Eier','list': todo_list_1_id, 'owner_id': user_id_eve},
 ]
 
 # add some headers to allow cross origin access to the API on this server, necessary for using preview in Swagger Editor!
@@ -83,9 +77,53 @@ def add_new_list():
     new_list = request.get_json(force=True)
     print('Got new list to be added: {}'.format(new_list))
     # create id for new list, save it and return the list with id
-    new_list['id'] = uuid.uuid4()
+    new_list['id'] = str(uuid.uuid4())
     todo_lists.append(new_list)
+    print('Current Lists: {}'.format(todo_lists))
     return jsonify(new_list), 200
+
+#definition endpoint for adding new todo entrys to an distingt list
+@app.route('/list/<list_id>/entry',methods = ['POST'])
+def add_new_entry(list_id):
+    #new entry from POST request
+    new_entry = request.get_json(force=True)
+    # find todo list depending on given list id
+    for l in todo_lists:
+        if l['id'] == list_id:
+            new_entry['id']=str(uuid.uuid4())
+            new_entry['list_id'] = list_id
+            todos.append()
+            return jsonify(new_entry),200
+    abort(400)
+
+@app.route('/list/<list_id>/entry/<entry_id>',methods = ['POST','DELETE'])
+def handle_entrys(list_id,entry_id):    
+    # find todo list depending on given list id
+    list_item = None
+    for l in todo_lists:
+        if l['id'] == list_id:
+            list_item = l
+            break
+    # if the given list id is invalid, return status code 404
+    if not list_item:
+        abort(404)
+    # if calling method was post, search for an entry to update
+    if request.method == 'POST':
+        update_entry=request.get_json(force=True)
+        for t in todos:
+            if t['id'] == entry_id:
+                t = update_entry
+                print('Current Todos: {}'.format(todo_lists))
+                return '',200
+        abort(404)
+    elif request.method == 'DELETE':
+        for e in todos :
+            if e['id'] == entry_id:
+                todos.remove(e)
+                print('Entry sccesfully removed')
+                return '', 200
+        abort(404)
+
 
 
 # define endpoint for getting all lists
@@ -97,4 +135,4 @@ def get_all_lists():
 if __name__ == '__main__':
     # start Flask server
     app.debug = True
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='127.0.0.1', port=5000)
